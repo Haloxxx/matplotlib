@@ -34,7 +34,7 @@ from matplotlib.cbook import silent_list
 from matplotlib.font_manager import FontProperties
 from matplotlib.lines import Line2D
 from matplotlib.patches import (Patch, Rectangle, Shadow, FancyBboxPatch,
-                                StepPatch)
+                                 FancyArrowPatch, StepPatch)
 from matplotlib.collections import (LineCollection, RegularPolyCollection,
                                     CircleCollection, PathCollection,
                                     PolyCollection)
@@ -45,6 +45,7 @@ from matplotlib.offsetbox import HPacker, VPacker, TextArea, DrawingArea
 from matplotlib.offsetbox import DraggableOffsetBox
 
 from matplotlib.container import ErrorbarContainer, BarContainer, StemContainer
+from matplotlib.text import Annotation, Text
 from . import legend_handler
 
 
@@ -632,8 +633,10 @@ class Legend(Artist):
             update_func=legend_handler.update_from_first_child),
         tuple: legend_handler.HandlerTuple(),
         PathCollection: legend_handler.HandlerPathCollection(),
-        PolyCollection: legend_handler.HandlerPolyCollection()
-        }
+        PolyCollection: legend_handler.HandlerPolyCollection(),
+        FancyArrowPatch: legend_handler.HandlerFancyArrowPatch(),
+        Annotation: legend_handler.HandlerAnnotation()
+     }
 
     # (get|set|update)_default_handler_maps are public interfaces to
     # modify the default handler map.
@@ -809,6 +812,7 @@ class Legend(Artist):
                                    children=[self._legend_title_box,
                                              self._legend_handle_box])
         self._legend_box.set_figure(self.figure)
+        self._legend_box.set_offset(self._findoffset)
         self.texts = text_list
         self.legendHandles = handle_list
 
@@ -1115,12 +1119,13 @@ def _get_legend_handles(axs, legend_handler_map=None):
     handles_original = []
     for ax in axs:
         handles_original += (ax.lines + ax.patches +
-                             ax.collections + ax.containers)
+                             ax.collections + ax.containers + ax.texts)
         # support parasite axes:
         if hasattr(ax, 'parasites'):
             for axx in ax.parasites:
                 handles_original += (axx.lines + axx.patches +
-                                     axx.collections + axx.containers)
+                                    axx.collections + axx.containers
+                                        + axx.texts)
 
     handler_map = Legend.get_default_handler_map()
 
